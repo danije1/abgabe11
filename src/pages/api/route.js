@@ -33,6 +33,68 @@ export async function GET(req) {
   }
 }
 
-/*export default function handler(req, res) {
-  res.status(200).json({ name: "John Doe" });
-}*/
+export async function POST(req) {
+  try {
+    const body = await req.json(); // Daten aus der Anfrage abrufen
+    const { content } = body;
+
+    if (!content) {
+      return new Response(
+        JSON.stringify({ error: "Content darf nicht leer sein" }),
+        { status: 400 }
+      );
+    }
+
+    const result = await sql`
+      INSERT INTO comments (content)
+      VALUES (${content})
+      RETURNING *;
+    `;
+
+    return new Response(JSON.stringify(result[0]), {
+      status: 201,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ error: "Fehler beim Hinzufügen des Kommentars" }),
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(req) {
+  try {
+    const url = new URL(req.url);
+    const id = url.searchParams.get("id");
+
+    if (!id) {
+      return new Response(JSON.stringify({ error: "ID ist erforderlich" }), {
+        status: 400,
+      });
+    }
+
+    const result = await sql`
+      DELETE FROM comments
+      WHERE id = ${id}
+      RETURNING *;
+    `;
+
+    if (result.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "Kommentar nicht gefunden" }),
+        { status: 404 }
+      );
+    }
+
+    return new Response(JSON.stringify(result[0]), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ error: "Fehler beim Löschen des Kommentars" }),
+      { status: 500 }
+    );
+  }
+}
