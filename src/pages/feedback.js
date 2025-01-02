@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { GET, POST, DELETE } from "./route.js";
+import { GET, POST, DELETE } from "../api/route.js";
 
 export default function Feedback() {
   // Zustände für den Kommentar
