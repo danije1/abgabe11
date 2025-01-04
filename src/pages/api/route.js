@@ -1,88 +1,55 @@
-// Next.js API route support: https://nextjs.org/docs/api-routes/introduction
-
 import { sql } from "@vercel/postgres";
 
-export async function GET(req) {
-  // Hole Daten aus der Tabelle
-  try {
-    const result = await sql`SELECT * FROM comments;`;
+const connectionString = process.env.DATABASE_URL;
 
-    return new Response(JSON.stringify(result.rows), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-  } catch (error) {
-    return new Response(
-      JSON.stringify({ error: "Fehler beim Abrufen der Daten" }),
-      {
-        status: 500,
+if (!connectionString) {
+  console.error("Datenbank-URL fehlt.");
+  throw new Error("Datenbank-URL fehlt.");
+}
+
+export default async function handler(req, res) {
+  const method = req.method;
+
+  try {
+    if (method === "GET") {
+      const result = await sql`
+        SELECT * FROM comments;
+      `;
+      res.status(200).json(result.rows);
+    } else if (method === "POST") {
+      const { content } = req.body;
+      const result = await sql`
+        INSERT INTO comments (content)
+        VALUES (${content})
+        RETURNING *;
+      `;
+      res.status(201).json(result.rows[0]);
+    } else if (method === "DELETE") {
+      const { id } = req.body;
+
+      if (!id) {
+        return res
+          .status(400)
+          .json({ error: "Keine ID zum Löschen angegeben." });
       }
-    );
-  }
-}
 
-export async function POST(req) {
-  try {
-    const body = await req.json(); // Daten aus der Anfrage abrufen
-    const { content } = body;
+      const result = await sql`
+        DELETE FROM comments
+        WHERE id = ${id}
+        RETURNING *;
+      `;
 
-    if (!content) {
-      return new Response(
-        JSON.stringify({ error: "Content darf nicht leer sein" }),
-        { status: 400 }
-      );
-    }
+      if (result.rowCount === 0) {
+        return res.status(404).json({ error: "Kommentar nicht gefunden." });
+      }
 
-    const result = await sql`
-      INSERT INTO comments (content)
-      VALUES (${content})
-      RETURNING *;
-    `;
-
-    return new Response(JSON.stringify(result[0]), {
-      status: 201,
-      headers: { "Content-Type": "application/json" },
-    });
-  } catch (error) {
-    return new Response(
-      JSON.stringify({ error: "Fehler beim Hinzufügen des Kommentars" }),
-      { status: 500 }
-    );
-  }
-}
-
-export async function DELETE(req) {
-  try {
-    const url = new URL(req.url);
-    const id = url.searchParams.get("id");
-
-    if (!id) {
-      return new Response(JSON.stringify({ error: "ID ist erforderlich" }), {
-        status: 400,
+      res.status(200).json({
+        message: "Kommentar gelöscht.",
+        deletedComment: result.rows[0],
       });
     }
-
-    const result = await sql`
-      DELETE FROM comments
-      WHERE id = ${id}
-      RETURNING *;
-    `;
-
-    if (result.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "Kommentar nicht gefunden" }),
-        { status: 404 }
-      );
-    }
-
-    return new Response(JSON.stringify(result[0]), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
   } catch (error) {
-    return new Response(
-      JSON.stringify({ error: "Fehler beim Löschen des Kommentars" }),
-      { status: 500 }
-    );
+    console.error("Fehler in der API:", error);
+    res.status(500).json({ error: "Interner Serverfehler." });
   }
 }

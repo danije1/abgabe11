@@ -8,7 +8,7 @@ export default function Home() {
       <header style={headerStyle}>
         <div style={logoContainerStyle}>
           <Image
-            src="/image/logo_sw.gif" // Ersetze mit deinem animierten Logo
+            src="/image/logo_sw.gif"
             alt="Switch AI Logo"
             width={150}
             height={70}
@@ -16,14 +16,10 @@ export default function Home() {
           <h1 style={h1Style}>switch.ai</h1>
         </div>
         <nav style={navStyle}>
-          <a href="#about" style={linkStyle}>
-            About
-          </a>
-          <a href="#services" style={linkStyle}>
-            Services
-          </a>
+          {/* Nur der "Feedback"-Link bleibt */}
           <Link href="/feedback">
-            <span style={linkStyle}>Contact</span> {/* Ändere a zu span */}
+            <span style={feedbackLinkStyle}>Feedback</span>{" "}
+            {/* Umbenennung in "Feedback" */}
           </Link>
         </nav>
       </header>
@@ -41,9 +37,11 @@ export default function Home() {
   );
 }
 
-const linkStyle = {
+const feedbackLinkStyle = {
   textDecoration: "none",
   color: "#0070f3",
+  fontSize: "1.6rem", // Vergrößerte Schrift
+  fontWeight: "700", // Dickere Schrift für besseres visuelles Gewicht
 };
 
 const roboto = Roboto({
@@ -80,7 +78,7 @@ const navStyle = {
 const heroStyle = {
   position: "relative",
   height: "1400px",
-  backgroundImage: 'url("/image/header.png")', // Ersetze mit deinem Hero-Bild
+  backgroundImage: 'url("/image/header.png")',
   backgroundSize: "cover",
   backgroundPosition: "center",
   display: "flex",

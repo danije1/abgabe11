@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { Roboto } from "next/font/google";
 import Link from "next/link";
 
-export default function Feedback() {
-  const [comments, setComments] = useState([]);
-  const [comment, setComment] = useState("");
+export default function Home() {
+  const [comments, setComments] = useState([]); // State für Kommentare
+  const [comment, setComment] = useState(""); // State für das Eingabefeld
 
   // Kommentare beim Laden der Seite abrufen
   useEffect(() => {
@@ -19,7 +20,7 @@ export default function Feedback() {
   // Kommentar hinzufügen
   const submitComment = async (e) => {
     e.preventDefault();
-    if (comment.trim() === "") return;
+    if (comment.trim() === "") return; // Leere Kommentare verhindern
 
     try {
       const response = await fetch("/api/route", {
@@ -28,8 +29,10 @@ export default function Feedback() {
         body: JSON.stringify({ content: comment }),
       });
       const newComment = await response.json();
+
+      // Neu hinzugefügten Kommentar anzeigen
       setComments([newComment, ...comments]);
-      setComment("");
+      setComment(""); // Eingabefeld zurücksetzen
     } catch (error) {
       console.error("Fehler beim Hinzufügen des Kommentars:", error);
     }
@@ -38,8 +41,19 @@ export default function Feedback() {
   // Kommentar löschen
   const deleteComment = async (id) => {
     try {
-      await fetch(`/api/route?id=${id}`, { method: "DELETE" });
-      setComments(comments.filter((c) => c.id !== id));
+      const response = await fetch("/api/route", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const result = await response.json();
+
+      // Kommentar aus dem State entfernen
+      if (response.ok) {
+        setComments(comments.filter((comment) => comment.id !== id));
+      } else {
+        console.error("Fehler beim Löschen des Kommentars:", result);
+      }
     } catch (error) {
       console.error("Fehler beim Löschen des Kommentars:", error);
     }
@@ -47,37 +61,32 @@ export default function Feedback() {
 
   return (
     <>
-      <div style={pageStyle}>
-        <header style={headerStyle}>
-          <div style={logoContainerStyle}>
-            <Link href="/" style={logoLinkStyle}>
-              <Image
-                src="/image/logo_sw.gif"
-                alt="Switch AI Logo"
-                width={150}
-                height={70}
-              />
-            </Link>
-            <Link href="/" style={h1Style}>
-              switch.ai
-            </Link>
-          </div>
-          <nav style={navStyle}>
-            <a href="#about" style={linkStyle}>
-              About
-            </a>
-            <a href="#services" style={linkStyle}>
-              Services
-            </a>
-            <Link href="/feedback" style={linkStyle}>
-              Contact
-            </Link>
-          </nav>
-        </header>
+      <header style={headerStyle}>
+        <div style={logoContainerStyle}>
+          {/* Navigation zum Index */}
+          <Link href="/" style={logoLinkStyle}>
+            <Image
+              src="/image/logo_sw.gif" // Ersetze mit deinem animierten Logo
+              alt="Switch AI Logo"
+              width={150}
+              height={70}
+            />
+            <h1 style={h1Style}>switch.ai</h1>
+          </Link>
+        </div>
+        <nav style={navStyle}>
+          {/* Nur der "Feedback"-Link bleibt */}
+          <Link href="/feedback">
+            <span style={feedbackLinkStyle}>Feedback</span>{" "}
+          </Link>
+        </nav>
+      </header>
 
-        <div style={containerStyle}>
-          <h1 style={headerStyleFeedback}>Feedback</h1>
+      <section style={heroStyle}>
+        <div style={commentSectionStyle}>
+          <h1 style={feedbackHeaderStyle}>Feedback</h1>
 
+          {/* Formular zum Hinzufügen von Kommentaren */}
           <form onSubmit={submitComment} style={formStyle}>
             <textarea
               value={comment}
@@ -91,18 +100,19 @@ export default function Feedback() {
             </button>
           </form>
 
+          {/* Liste der Kommentare */}
           <h2 style={commentsHeaderStyle}>Kommentare:</h2>
           <div style={commentsContainerStyle}>
             {comments.length > 0 ? (
               comments.map((c) => (
                 <div key={c.id} style={commentStyle}>
-                  <div style={commentHeaderStyle}>Kommentar ID: {c.id}</div>
-                  <p>{c.content}</p>
+                  <p style={commentTextStyle}>{c.content}</p>
+                  {/* Löschen-Button */}
                   <button
                     onClick={() => deleteComment(c.id)}
                     style={deleteButtonStyle}
                   >
-                    X
+                    &#10006;
                   </button>
                 </div>
               ))
@@ -111,18 +121,20 @@ export default function Feedback() {
             )}
           </div>
         </div>
-      </div>
+      </section>
+
+      <footer style={footerStyle}>
+        <p>&copy; switch.ai All rights reserved.</p>
+      </footer>
     </>
   );
 }
 
-// Styles
-const pageStyle = {
-  backgroundColor: "#0f1c25",
-  minHeight: "100vh",
-  color: "#E0E0E0",
-  margin: 0,
-  fontFamily: "'Arial', sans-serif",
+const feedbackLinkStyle = {
+  textDecoration: "none",
+  color: "#0070f3",
+  fontSize: "1.6rem", // Vergrößerte Schrift
+  fontWeight: "700", // Dickere Schrift für besseres visuelles Gewicht
 };
 
 const headerStyle = {
@@ -141,18 +153,16 @@ const logoContainerStyle = {
   gap: "0.5rem",
 };
 
-const logoLinkStyle = {
-  display: "flex",
-  alignItems: "center",
-  gap: "0.5rem",
-};
-
 const h1Style = {
   margin: 0,
   fontSize: "1.8rem",
-  textDecoration: "none",
-  color: "#fff",
-  cursor: "pointer",
+};
+
+const logoLinkStyle = {
+  textDecoration: "none", // Verhindert, dass der Link unterstrichen wird
+  color: "#fff", // Weißer Text für den Link
+  display: "flex",
+  alignItems: "center",
 };
 
 const navStyle = {
@@ -160,102 +170,95 @@ const navStyle = {
   gap: "1rem",
 };
 
-const linkStyle = {
-  textDecoration: "none",
+const heroStyle = {
+  position: "relative",
+  height: "1400px",
+  backgroundImage: 'url("/image/header.png")', // Ersetze mit deinem Hero-Bild
+  backgroundSize: "cover",
+  backgroundPosition: "center",
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
   color: "#fff",
-  padding: "0.5rem 1rem",
-  borderRadius: "4px",
-  transition: "background-color 0.3s",
 };
 
-const containerStyle = {
-  padding: "40px",
-  maxWidth: "700px",
-  margin: "auto",
-  backgroundColor: "#1A2530",
-  color: "#E0E0E0",
-  borderRadius: "8px",
-  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+const commentSectionStyle = {
+  maxWidth: "1200px", // Doppelte Breite
+  margin: "20px auto",
+  padding: "20px",
+  fontFamily: "Arial, sans-serif",
 };
 
-const headerStyleFeedback = {
-  fontSize: "2.5rem",
-  fontWeight: "600",
-  marginBottom: "20px",
+const feedbackHeaderStyle = {
   textAlign: "center",
-  color: "#00D9F1",
+  marginBottom: "20px",
 };
 
 const formStyle = {
   display: "flex",
   flexDirection: "column",
-  gap: "15px",
-  marginBottom: "30px",
+  marginBottom: "20px",
 };
 
 const textareaStyle = {
-  width: "100%",
-  padding: "12px",
-  fontSize: "16px",
-  borderRadius: "8px",
-  border: "1px solid #333",
-  backgroundColor: "#2A3842",
-  color: "#E0E0E0",
-  resize: "none",
+  padding: "10px",
+  marginBottom: "10px",
+  borderRadius: "5px",
+  border: "1px solid #ccc",
 };
 
 const buttonStyle = {
-  padding: "12px 20px",
-  backgroundColor: "#00D9F1",
-  color: "#1A2530",
-  fontSize: "16px",
-  fontWeight: "600",
+  padding: "10px",
+  backgroundColor: "#28a745", // Grüner Hintergrund
+  color: "#fff",
   border: "none",
-  borderRadius: "8px",
+  borderRadius: "5px",
   cursor: "pointer",
-  transition: "background-color 0.3s",
 };
 
 const commentsHeaderStyle = {
-  fontSize: "1.8rem",
-  fontWeight: "500",
-  marginBottom: "20px",
-  textAlign: "center",
-  color: "#00D9F1",
+  marginTop: "20px",
 };
 
 const commentsContainerStyle = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "10px",
+  marginTop: "10px",
+  padding: "10px",
+  borderRadius: "5px",
+  backgroundColor: "#f9f9f9",
 };
 
 const commentStyle = {
-  backgroundColor: "#2A3842",
-  padding: "15px",
-  borderRadius: "8px",
-  color: "#E0E0E0",
-  fontSize: "16px",
-  boxShadow: "0 2px 6px rgba(0, 0, 0, 0.2)",
+  padding: "10px",
+  marginBottom: "10px",
+  borderBottom: "1px solid #ccc",
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
 };
 
-const commentHeaderStyle = {
-  fontWeight: "bold",
-  marginBottom: "10px",
+const commentTextStyle = {
+  color: "#000", // Schriftfarbe der Kommentare auf schwarz gesetzt
 };
 
 const deleteButtonStyle = {
-  backgroundColor: "#FF5C5C",
+  backgroundColor: "red",
   color: "#fff",
   border: "none",
-  borderRadius: "4px",
-  cursor: "pointer",
+  borderRadius: "50%",
   padding: "5px 10px",
-  marginTop: "10px",
+  cursor: "pointer",
+  fontSize: "16px",
 };
 
 const noCommentsStyle = {
   textAlign: "center",
-  fontSize: "1.2rem",
-  color: "#C0C0C0",
+  color: "#999",
+};
+
+const footerStyle = {
+  textAlign: "center",
+  padding: "1rem",
+  backgroundColor: "#203a43",
+  color: "#fff",
+  marginTop: "2rem",
 };
