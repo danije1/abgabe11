@@ -2,6 +2,46 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
+import { sql } from "@vercel/postgres";
+import { neon } from "@neondatabase/serverless";
+
+const express = require("express");
+const bodyParser = require("body-parser");
+const { Client } = require("pg");
+
+const router = express.Router();
+
+// PostgreSQL-Client einrichten
+const client = new Client({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+});
+
+client.connect();
+
+// Route für das Feedback-Formular
+router.get("/", (req, res) => {
+  res.send(`
+    <form action="/feedback/create" method="POST">
+      <input type="text" placeholder="write a comment" name="comment" required />
+      <button type="submit">Submit</button>
+    </form>
+  `);
+});
+
+// Route für die Verarbeitung
+router.post("/create", async (req, res) => {
+  const comment = req.body.comment;
+
+  try {
+    await client.query("INSERT INTO comments (content) VALUES ($1)", [comment]);
+    res.send("Kommentar erfolgreich gespeichert!");
+  } catch (err) {
+    console.error("Fehler beim Einfügen:", err);
+    res.status(500).send("Fehler beim Speichern des Kommentars.");
+  }
+});
+
 export default function Feedback() {
   const [comments, setComments] = useState([]);
   const [comment, setComment] = useState("");
