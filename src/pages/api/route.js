@@ -1,60 +1,8 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 
 import { sql } from "@vercel/postgres";
-import { neon } from "@neondatabase/serverless";
-
-const express = require("express");
-const bodyParser = require("body-parser");
-const { Client } = require("pg");
-
-const router = express.Router();
-
-// PostgreSQL-Client einrichten
-const client = new Client({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
-});
-
-client.connect();
-
-// Route für das Feedback-Formular
-router.get("/", (req, res) => {
-  res.send(`
-    <form action="/feedback/create" method="POST">
-      <input type="text" placeholder="write a comment" name="comment" required />
-      <button type="submit">Submit</button>
-    </form>
-  `);
-});
-
-// Route für die Verarbeitung
-router.post("/create", async (req, res) => {
-  const comment = req.body.comment;
-
-  try {
-    await client.query("INSERT INTO comments (content) VALUES ($1)", [comment]);
-    res.send("Kommentar erfolgreich gespeichert!");
-  } catch (err) {
-    console.error("Fehler beim Einfügen:", err);
-    res.status(500).send("Fehler beim Speichern des Kommentars.");
-  }
-});
-
-module.exports = router;
 
 export async function GET(req) {
-  // Versuche, die Tabelle zu erstellen, falls sie noch nicht existiert
-  try {
-    await sql`
-      CREATE TABLE IF NOT EXISTS comments (
-        id SERIAL PRIMARY KEY,
-        content VARCHAR(255) NOT NULL
-      );
-    `;
-  } catch (error) {
-    console.error("Fehler beim Erstellen der Tabelle:", error);
-  }
-
   // Hole Daten aus der Tabelle
   try {
     const result = await sql`SELECT * FROM comments;`;
